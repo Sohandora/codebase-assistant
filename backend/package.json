@@ -1,0 +1,24 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@google/genai": "^2.18.0",
+    "@google/generative-ai": "^0.24.1",
+    "cohere-ai": "^8.1.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^5.2.1",
+    "groq-sdk": "^1.5.0",
+    "pg": "^8.23.0",
+    "simple-git": "^3.36.0"
+  }
+}
