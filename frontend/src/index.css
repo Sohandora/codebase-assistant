@@ -1,0 +1,96 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #1a1a1a;
+  color: #eee;
+}
+
+.app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+h1 {
+  font-size: 24px;
+  margin-bottom: 24px;
+}
+
+.repo-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+input {
+  flex: 1;
+  padding: 10px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #eee;
+  border-radius: 4px;
+}
+
+button {
+  padding: 10px 16px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+.chat-window {
+  background: #2a2a2a;
+  border-radius: 4px;
+  padding: 16px;
+  height: 400px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.placeholder-text {
+  color: #888;
+}
+
+.ask-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ask-row button {
+  background: #16a34a;
+}
+
+.ask-row button:hover {
+  background: #15803d;
+}
+.message {
+  margin-bottom: 16px;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.user-message {
+  background: #1d4ed8;
+  margin-left: 20%;
+}
+
+.ai-message {
+  background: #374151;
+  margin-right: 20%;
+}
+
+.message-role {
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
