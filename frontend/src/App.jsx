@@ -94,10 +94,18 @@ function App() {
 
       {repoStatus && <p className="placeholder-text">{repoStatus}</p>}
 
-      <label style={{ display: "block", margin: "12px 0" }}>
-        <input type="checkbox" checked={useAgent} onChange={(e) => setUseAgent(e.target.checked)} />
-        {" "}Use Agent mode
-      </label>
+      <div className="mode-toggle-row">
+  <div
+    className={`toggle-switch ${useAgent ? "active" : ""}`}
+    onClick={() => setUseAgent(!useAgent)}
+  >
+    <div className="toggle-knob"></div>
+  </div>
+  <div className="mode-label">
+    {useAgent ? "Agent mode" : "Normal mode"}
+    <span>{useAgent ? "Multi-step reasoning with tools" : "Single-pass retrieval"}</span>
+  </div>
+</div>
 
       <div className="chat-window">
   {messages.length === 0 && (
