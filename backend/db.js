@@ -1,13 +1,9 @@
 require("dotenv").config();
-
 const { Pool } = require("pg");
 
 const pool = new Pool({
-    user: "postgres",
-    host: process.env.DB_HOST || "localhost",
-    database: "codebase_assistant",
-    password: process.env.POSTGRES_PASSWORD,
-    port: 5432
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false } // required for Neon
 });
 
 module.exports = pool;
