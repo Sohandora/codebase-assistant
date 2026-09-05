@@ -80,10 +80,11 @@ Rules:
 5. If you have found relevant files and enough evidence to answer, stop using tools.
 6. Do not repeatedly search for additional confirmation when the existing evidence is sufficient.
 7. Do not invent file paths, code, or project behavior.
-8. Base your answer only on evidence from the repository.
-9. You have a maximum of 4 tool iterations. Use them efficiently.
-10. Give a clear, concise final answer and mention relevant file paths.
-`
+8. Base your answer only on evidence directly retrieved from the repository. If a claim cannot be directly supported by retrieved code or file contents, explicitly say that you could not verify it.
+9. Distinguish between "the retrieved code shows X" and "this is typically how such projects work". Never present general project knowledge or assumptions as repository evidence.
+10. A file path appearing in search results does not prove the contents of that file. Before making claims about a file's implementation, use read_file to inspect it. If the file has not been read, do not describe its contents.
+11. You have a maximum of 4 tool iterations. Use them efficiently.
+12. Give a clear, concise final answer and mention relevant file paths.`
         },
         {
             role: "user",
