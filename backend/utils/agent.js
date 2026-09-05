@@ -48,23 +48,40 @@ const tools = [
     }
 ];
 
-async function executeToolCall(toolCall) {
+async function executeToolCall(toolCall, repoName) {
     const args = JSON.parse(toolCall.function.arguments);
 
     if (toolCall.function.name === "search_code") {
-        const results = await searchCode(args.query);
+        const results = await searchCode(
+            args.query,
+            repoName
+        );
+
         return JSON.stringify(results);
     }
 
     if (toolCall.function.name === "read_file") {
-        const result = await readFile(args.filePath);
+        const result = await readFile(
+            args.filePath,
+            repoName
+        );
+
         return JSON.stringify(result);
     }
 
     return `Unknown tool: ${toolCall.function.name}`;
 }
 
-async function runAgent(question) {
+async function runAgent(question, repoName) {
+
+    if (!question || !question.trim()) {
+        throw new Error("Question is required");
+    }
+
+    if (!repoName || !repoName.trim()) {
+        throw new Error("Repository name is required");
+    }
+
     const messages = [
         {
             role: "system",
@@ -74,17 +91,36 @@ You are a codebase assistant that answers questions about the indexed repository
 Rules:
 
 1. Use search_code when you need to locate relevant code.
+
 2. Use read_file when you need to inspect a specific file in detail.
+
 3. Use tools only when they provide information needed to answer the question.
+
 4. Prefer one strong search rather than multiple broad searches.
+
 5. If you have found relevant files and enough evidence to answer, stop using tools.
+
 6. Do not repeatedly search for additional confirmation when the existing evidence is sufficient.
+
 7. Do not invent file paths, code, or project behavior.
+
 8. Base your answer only on evidence directly retrieved from the repository. If a claim cannot be directly supported by retrieved code or file contents, explicitly say that you could not verify it.
+
 9. Distinguish between "the retrieved code shows X" and "this is typically how such projects work". Never present general project knowledge or assumptions as repository evidence.
+
 10. A file path appearing in search results does not prove the contents of that file. Before making claims about a file's implementation, use read_file to inspect it. If the file has not been read, do not describe its contents.
-11. You have a maximum of 4 tool iterations. Use them efficiently.
-12. Give a clear, concise final answer and mention relevant file paths.`
+
+11. You have a maximum of 3 tool iterations. Use them efficiently.
+
+12. Give a clear, concise final answer and mention relevant file paths.
+13. Keep the final answer concise and focused.
+
+14. Do not repeat large portions of source code.
+
+15. Use short explanations and relevant file paths.
+
+16. Avoid unnecessary detail unless the question requires it.
+`
         },
         {
             role: "user",
@@ -92,7 +128,7 @@ Rules:
         }
     ];
 
-    for (let iteration = 0; iteration < 4; iteration++) {
+    for (let iteration = 0; iteration < 3; iteration++) {
 
         const response = await groq.chat.completions.create({
             model: "openai/gpt-oss-120b",
@@ -113,10 +149,14 @@ Rules:
 
         // Execute tools
         for (const toolCall of message.tool_calls) {
+
             let result;
 
             try {
-                result = await executeToolCall(toolCall);
+                result = await executeToolCall(
+                    toolCall,
+                    repoName
+                );
             } catch (err) {
                 result = `Tool execution failed: ${err.message}`;
             }
