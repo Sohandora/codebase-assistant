@@ -3,6 +3,7 @@ const simpleGit = require("simple-git");
 const fs = require("fs");
 const path = require("path");
 const { walkDirectory } = require("../utils/fileWalker");
+const { processRepo } = require("../utils/processRepo");
 
 const router = express.Router();
 
@@ -38,23 +39,29 @@ router.post("/repo", async (req, res) => {
         const git = simpleGit();
 
         await git.clone(repoUrl, clonePath);
+
         const files = walkDirectory(clonePath);
 
-            res.json({
-        message: "cloned successfully",
-        path: clonePath,
-        repoName,
-        fileCount: files.length,
-        files: files.map(file =>
-            path.relative(clonePath, file)
-        )
-    });
+        console.log(`Cloned ${repoName}`);
+        console.log(`Found ${files.length} files`);
+        console.log("Starting ingestion...");
+
+        await processRepo(clonePath, repoName);
+
+        res.json({
+            message: "repository cloned and indexed successfully",
+            repoName,
+            fileCount: files.length,
+            files: files.map(file =>
+                path.relative(clonePath, file)
+            )
+        });
 
     } catch (error) {
         console.error(error);
 
         res.status(500).json({
-            error: "clone failed",
+            error: "repository processing failed",
             details: error.message
         });
     }
