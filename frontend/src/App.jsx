@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-const API_BASE = "http://localhost:5000/api";
-
+const API_BASE = "https://co-19734d1b218d4480bed316640e09676c.ecs.us-east-1.on.aws/api";
 function App() {
   const [theme, setTheme] = useState("dark");
   const [repoUrl, setRepoUrl] = useState("");
