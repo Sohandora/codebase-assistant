@@ -1,23 +1,29 @@
 const fs = require("fs");
 const path = require("path");
 
-async function readFile(filePath) {
+async function readFile(filePath, repoName) {
     if (!filePath || !filePath.trim()) {
         throw new Error("File path is required");
+    }
+
+    if (!repoName || !repoName.trim()) {
+        throw new Error("Repository name is required");
     }
 
     const repoRoot = path.resolve(
         __dirname,
         "..",
         "temp-repos",
-        "react-redux-realworld-example-app"
+        repoName
     );
 
     const fullPath = path.resolve(repoRoot, filePath);
 
-    // Prevent reading files outside the repository
+    // Prevent reading files outside the selected repository
     if (!fullPath.startsWith(repoRoot + path.sep)) {
-        throw new Error("Access denied: file is outside the repository");
+        throw new Error(
+            "Access denied: file is outside the repository"
+        );
     }
 
     if (!fs.existsSync(fullPath)) {
@@ -30,7 +36,10 @@ async function readFile(filePath) {
         throw new Error("Path is not a file");
     }
 
-    const content = fs.readFileSync(fullPath, "utf-8");
+    const content = fs.readFileSync(
+        fullPath,
+        "utf-8"
+    );
 
     return {
         filePath,

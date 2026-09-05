@@ -17,7 +17,7 @@ function dedupeByFile(results) {
         .slice(0, 5);
 }
 
-async function searchChunks(queryEmbedding, limit = 15) {
+async function searchChunks(queryEmbedding, repoName, limit = 15) {
     const query = `
         SELECT
             id,
@@ -26,12 +26,14 @@ async function searchChunks(queryEmbedding, limit = 15) {
             chunk_text,
             embedding <=> $1::vector AS distance
         FROM code_chunks
+        WHERE repo_name = $2
         ORDER BY embedding <=> $1::vector
-        LIMIT $2;
+        LIMIT $3;
     `;
 
     const result = await pool.query(query, [
         JSON.stringify(queryEmbedding),
+        repoName,
         limit
     ]);
 

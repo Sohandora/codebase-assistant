@@ -1,15 +1,18 @@
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 
-const API_BASE = "https://co-19734d1b218d4480bed316640e09676c.ecs.us-east-1.on.aws/api";
+const API_BASE = "http://localhost:5000/api";
 function App() {
   const [theme, setTheme] = useState("dark");
   const [repoUrl, setRepoUrl] = useState("");
+  const [repoName, setRepoName] = useState("");
   const [repoStatus, setRepoStatus] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [useAgent, setUseAgent] = useState(false);
+
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -17,7 +20,9 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    chatEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
   }, [messages, loading]);
 
   async function handleAnalyzeRepo() {
@@ -25,45 +30,112 @@ function App() {
       setRepoStatus("Please enter a GitHub repository URL.");
       return;
     }
+
     setAnalyzing(true);
     setRepoStatus("Cloning and processing repo... this may take a minute.");
+
     try {
       const res = await fetch(`${API_BASE}/repo`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoUrl }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          repoUrl,
+        }),
       });
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to process repository");
-      setRepoStatus(`Repo processed: ${data.repoName}`);
+
+      if (!res.ok) {
+        throw new Error(
+          data.error || "Failed to process repository"
+        );
+      }
+
+      setRepoName(data.repoName);
+
+      setRepoStatus(
+        `Repo processed successfully: ${data.repoName}`
+      );
+
+      setMessages([]);
     } catch (err) {
       setRepoStatus(`Error: ${err.message}`);
+      setRepoName("");
     } finally {
       setAnalyzing(false);
     }
   }
 
   async function handleAsk() {
-    if (!question.trim() || loading) return;
-    const userQuestion = question.trim();
-    setMessages((prev) => [...prev, { role: "user", text: userQuestion }]);
-    setQuestion("");
-    setLoading(true);
-    try {
-      const endpoint = useAgent ? "/agent" : "/ask";
-      const res = await fetch(`${API_BASE}${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: userQuestion }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Request failed");
+    if (!question.trim() || loading) {
+      return;
+    }
+
+    if (!repoName) {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", text: data.answer, sources: data.sourceFiles || [] },
+        {
+          role: "assistant",
+          text: "Please analyze a repository before asking questions.",
+        },
+      ]);
+
+      return;
+    }
+
+    const userQuestion = question.trim();
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        text: userQuestion,
+      },
+    ]);
+
+    setQuestion("");
+    setLoading(true);
+
+    try {
+      const endpoint = useAgent ? "/agent" : "/ask";
+
+      const res = await fetch(`${API_BASE}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: userQuestion,
+          repoName,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          data.error || "Request failed"
+        );
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: data.answer,
+          sources: data.sourceFiles || [],
+        },
       ]);
     } catch (err) {
-      setMessages((prev) => [...prev, { role: "assistant", text: `Error: ${err.message}` }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: `Error: ${err.message}`,
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -73,7 +145,15 @@ function App() {
     <div className="app">
       <div className="top-bar">
         <h1>AI Codebase Assistant</h1>
-        <button className="theme-toggle" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+
+        <button
+          className="theme-toggle"
+          onClick={() =>
+            setTheme(
+              theme === "dark" ? "light" : "dark"
+            )
+          }
+        >
           {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
         </button>
       </div>
@@ -86,61 +166,129 @@ function App() {
           onChange={(e) => setRepoUrl(e.target.value)}
           disabled={analyzing}
         />
-        <button onClick={handleAnalyzeRepo} disabled={analyzing}>
-          {analyzing ? "Analyzing..." : "Analyze Repository"}
+
+        <button
+          onClick={handleAnalyzeRepo}
+          disabled={analyzing}
+        >
+          {analyzing
+            ? "Analyzing..."
+            : "Analyze Repository"}
         </button>
       </div>
 
-      {repoStatus && <p className="placeholder-text">{repoStatus}</p>}
+      {repoStatus && (
+        <p className="placeholder-text">
+          {repoStatus}
+        </p>
+      )}
+
+      {repoName && (
+        <p className="placeholder-text">
+          Active repository: <strong>{repoName}</strong>
+        </p>
+      )}
 
       <div className="mode-toggle-row">
-  <div
-    className={`toggle-switch ${useAgent ? "active" : ""}`}
-    onClick={() => setUseAgent(!useAgent)}
-  >
-    <div className="toggle-knob"></div>
-  </div>
-  <div className="mode-label">
-    {useAgent ? "Agent mode" : "Normal mode"}
-    <span>{useAgent ? "Multi-step reasoning with tools" : "Single-pass retrieval"}</span>
-  </div>
-</div>
+        <div
+          className={`toggle-switch ${
+            useAgent ? "active" : ""
+          }`}
+          onClick={() => setUseAgent(!useAgent)}
+        >
+          <div className="toggle-knob"></div>
+        </div>
+
+        <div className="mode-label">
+          {useAgent
+            ? "Agent mode"
+            : "Normal mode"}
+
+          <span>
+            {useAgent
+              ? "Multi-step reasoning with tools"
+              : "Single-pass retrieval"}
+          </span>
+        </div>
+      </div>
 
       <div className="chat-window">
-  {messages.length === 0 && (
-    <p className="placeholder-text">Ask something about your code...</p>
-  )}
-  {messages.map((message, index) => (
-    <div key={index} className={`message-row ${message.role}`}>
-      <div className={`message ${message.role}`}>
-        <div className="message-label">{message.role === "user" ? "You" : "AI"}</div>
-        <p>{message.text}</p>
-        {message.sources && message.sources.length > 0 && (
-          <div className="sources">Sources: {message.sources.join(", ")}</div>
+        {messages.length === 0 && (
+          <p className="placeholder-text">
+            Ask something about your code...
+          </p>
         )}
+
+        {messages.map((message, index) => (
+          <div
+            key={index}
+            className={`message-row ${message.role}`}
+          >
+            <div
+              className={`message ${message.role}`}
+            >
+              <div className="message-label">
+                {message.role === "user"
+                  ? "You"
+                  : "AI"}
+              </div>
+
+              <div className="message-content">
+                {message.role === "assistant" ? (
+                  <ReactMarkdown>
+                    {message.text}
+                  </ReactMarkdown>
+                ) : (
+                  <p>{message.text}</p>
+                )}
+              </div>
+
+              {message.sources &&
+                message.sources.length > 0 && (
+                  <div className="sources">
+                    <strong>Sources:</strong>{" "}
+                    {message.sources.join(", ")}
+                  </div>
+                )}
+            </div>
+          </div>
+        ))}
+
+        {loading && (
+          <div className="message-row assistant">
+            <div className="message assistant typing-indicator">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        )}
+
+        <div ref={chatEndRef} />
       </div>
-    </div>
-  ))}
-  {loading && (
-    <div className="message-row assistant">
-      <div className="message assistant typing-indicator">
-        <span></span><span></span><span></span>
-      </div>
-    </div>
-  )}
-  <div ref={chatEndRef} />
-</div>
 
       <div className="ask-row">
         <input
           type="text"
-          placeholder="Ask a question about your repo..."
+          placeholder={
+            repoName
+              ? "Ask a question about your repo..."
+              : "Analyze a repository first..."
+          }
           value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleAsk()}
-          disabled={loading}
+          onChange={(e) =>
+            setQuestion(e.target.value)
+          }
+          onKeyDown={(e) =>
+            e.key === "Enter" && handleAsk()
+          }
+          disabled={loading || !repoName}
         />
-        <button onClick={handleAsk} disabled={loading}>
+
+        <button
+          onClick={handleAsk}
+          disabled={loading || !repoName}
+        >
           {loading ? "..." : "Ask"}
         </button>
       </div>

@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const { walkDirectory } = require("../utils/fileWalker");
 const { processRepo } = require("../utils/processRepo");
+const pool = require("../db");
 
 const router = express.Router();
 
@@ -21,6 +22,22 @@ router.post("/repo", async (req, res) => {
             .split("/")
             .pop()
             .replace(".git", "");
+
+        const existingRepo = await pool.query(
+            `SELECT COUNT(*)::int AS count
+             FROM code_chunks
+             WHERE repo_name = $1`,
+            [repoName]
+        );
+
+        if (existingRepo.rows[0].count > 0) {
+            return res.json({
+                message: "repository already indexed",
+                repoName,
+                alreadyIndexed: true,
+                chunkCount: existingRepo.rows[0].count
+            });
+        }
 
         const clonePath = path.join(
             __dirname,
