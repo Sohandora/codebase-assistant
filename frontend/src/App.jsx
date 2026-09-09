@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
-const API_BASE = "https://co-b18e7180f7124381b7758038b6d8a535.ecs.us-east-1.on.aws/";
+const API_BASE = "https://co-19734d1b218d4480bed316640e09676c.ecs.us-east-1.on.aws";
 function App() {
   const [theme, setTheme] = useState("dark");
   const [repoUrl, setRepoUrl] = useState("");

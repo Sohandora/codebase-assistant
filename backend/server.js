@@ -1,34 +1,34 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+
 const repoRoute = require("./routes/repo");
-const Groq = require("groq-sdk");
-const askRoute = require('./routes/ask');
-const app = express();
+const askRoute = require("./routes/ask");
 const agentRoute = require("./routes/agent");
+const Groq = require("groq-sdk");
+
+const app = express();
+
 app.use(cors({
-    origin: [
-        "https://co-b18e7180f7124381b7758038b6d8a535.ecs.us-east-1.on.aws"
-    ]
+    origin: "https://co-b18e7180f7124381b7758038b6d8a535.ecs.us-east-1.on.aws"
 }));
+
 app.use(express.json());
+
 app.use("/api", repoRoute);
-app.use('/api', askRoute);
+app.use("/api", askRoute);
 app.use("/api", agentRoute);
+
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY
 });
 
-
-// Day 1
 app.get("/health", (req, res) => {
     res.json({
         status: "ok"
     });
 });
 
-
-// Day 2
 app.post("/chat", async (req, res) => {
     try {
         const { message } = req.body;
@@ -52,7 +52,7 @@ app.post("/chat", async (req, res) => {
         const reply = completion.choices[0].message.content;
 
         res.json({
-            reply: reply
+            reply
         });
 
     } catch (error) {
@@ -63,7 +63,6 @@ app.post("/chat", async (req, res) => {
         });
     }
 });
-
 
 const PORT = process.env.PORT || 5000;
 
