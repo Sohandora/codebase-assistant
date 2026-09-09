@@ -6,8 +6,11 @@ const Groq = require("groq-sdk");
 const askRoute = require('./routes/ask');
 const app = express();
 const agentRoute = require("./routes/agent");
-
-app.use(cors());
+app.use(cors({
+    origin: [
+        "https://co-b18e7180f7124381b7758038b6d8a535.ecs.us-east-1.on.aws"
+    ]
+}));
 app.use(express.json());
 app.use("/api", repoRoute);
 app.use('/api', askRoute);
