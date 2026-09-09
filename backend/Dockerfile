@@ -1,15 +1,12 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
-# Install git because the backend clones GitHub repositories
-RUN apk add --no-cache git
+COPY backend/package*.json ./
 
-COPY package*.json ./
+RUN npm install
 
-RUN npm ci --omit=dev
-
-COPY . .
+COPY backend/ ./
 
 EXPOSE 5000
 
