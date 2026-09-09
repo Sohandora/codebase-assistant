@@ -13,14 +13,14 @@ const tools = [
         function: {
             name: "search_code",
             description:
-                "Search the indexed codebase for relevant code chunks based on a natural language query. Returns file paths and code snippets ranked by relevance.",
+                "Search the repository for relevant code. Use one simple natural-language query.",
             parameters: {
                 type: "object",
                 properties: {
                     query: {
                         type: "string",
                         description:
-                            "The search query describing what code to find"
+                            "A natural-language description of the code to find."
                     }
                 },
                 required: ["query"]
@@ -32,14 +32,14 @@ const tools = [
         function: {
             name: "read_file",
             description:
-                "Read the full contents of a specific file from the repository, given its relative file path.",
+                "Read a specific file from the repository.",
             parameters: {
                 type: "object",
                 properties: {
                     filePath: {
                         type: "string",
                         description:
-                            "Relative path to the file, e.g. src/index.js"
+                            "Relative path of the repository file."
                     }
                 },
                 required: ["filePath"]
@@ -48,78 +48,33 @@ const tools = [
     }
 ];
 
-async function executeToolCall(toolCall, repoName) {
-    const args = JSON.parse(toolCall.function.arguments);
-
-    if (toolCall.function.name === "search_code") {
-        const results = await searchCode(
-            args.query,
-            repoName
-        );
-
-        return JSON.stringify(results);
-    }
-
-    if (toolCall.function.name === "read_file") {
-        const result = await readFile(
-            args.filePath,
-            repoName
-        );
-
-        return JSON.stringify(result);
-    }
-
-    return `Unknown tool: ${toolCall.function.name}`;
-}
-
 async function runAgent(question, repoName) {
-
-    if (!question || !question.trim()) {
-        throw new Error("Question is required");
-    }
-
-    if (!repoName || !repoName.trim()) {
-        throw new Error("Repository name is required");
-    }
 
     const messages = [
         {
             role: "system",
             content: `
-You are a codebase assistant that answers questions about the indexed repository.
+You are a codebase assistant.
 
-Rules:
+Answer questions using ONLY the repository evidence.
 
-1. Use search_code when you need to locate relevant code.
+For questions asking for an entry point, startup file, mounting,
+initialization, or application bootstrapping:
 
-2. Use read_file when you need to inspect a specific file in detail.
+1. Search the repository.
+2. Identify the most likely entry-point file.
+3. Read that file using read_file.
+4. Verify how the application starts or mounts.
+5. Only then give the answer.
 
-3. Use tools only when they provide information needed to answer the question.
+Do not assume that App.js is the entry point just because it contains
+the main application component.
 
-4. Prefer one strong search rather than multiple broad searches.
+A component such as App.js is NOT automatically the application entry point.
 
-5. If you have found relevant files and enough evidence to answer, stop using tools.
+Do not invent information.
 
-6. Do not repeatedly search for additional confirmation when the existing evidence is sufficient.
-
-7. Do not invent file paths, code, or project behavior.
-
-8. Base your answer only on evidence directly retrieved from the repository. If a claim cannot be directly supported by retrieved code or file contents, explicitly say that you could not verify it.
-
-9. Distinguish between "the retrieved code shows X" and "this is typically how such projects work". Never present general project knowledge or assumptions as repository evidence.
-
-10. A file path appearing in search results does not prove the contents of that file. Before making claims about a file's implementation, use read_file to inspect it. If the file has not been read, do not describe its contents.
-
-11. You have a maximum of 3 tool iterations. Use them efficiently.
-
-12. Give a clear, concise final answer and mention relevant file paths.
-13. Keep the final answer concise and focused.
-
-14. Do not repeat large portions of source code.
-
-15. Use short explanations and relevant file paths.
-
-16. Avoid unnecessary detail unless the question requires it.
+Mention the exact file path and explain briefly why it is the entry point.
 `
         },
         {
@@ -128,7 +83,7 @@ Rules:
         }
     ];
 
-    for (let iteration = 0; iteration < 3; iteration++) {
+    for (let i = 0; i < 2; i++) {
 
         const response = await groq.chat.completions.create({
             model: "openai/gpt-oss-120b",
@@ -139,53 +94,52 @@ Rules:
 
         const message = response.choices[0].message;
 
-        // Model has enough information
-        if (!message.tool_calls || message.tool_calls.length === 0) {
+        if (!message.tool_calls) {
             return message.content;
         }
 
-        // Add assistant tool-call message
         messages.push(message);
 
-        // Execute tools
         for (const toolCall of message.tool_calls) {
+
+            const args = JSON.parse(
+                toolCall.function.arguments
+            );
 
             let result;
 
-            try {
-                result = await executeToolCall(
-                    toolCall,
+            if (toolCall.function.name === "search_code") {
+
+                result = await searchCode(
+                    args.query,
                     repoName
                 );
-            } catch (err) {
-                result = `Tool execution failed: ${err.message}`;
+
+            } else if (toolCall.function.name === "read_file") {
+
+                result = await readFile(
+                    args.filePath,
+                    repoName
+                );
+
             }
 
             messages.push({
                 role: "tool",
                 tool_call_id: toolCall.id,
-                content: result
+                content: JSON.stringify(result)
             });
         }
     }
 
-    // Final answer phase after tool limit
     const finalResponse = await groq.chat.completions.create({
         model: "openai/gpt-oss-120b",
         messages: [
             ...messages,
             {
                 role: "user",
-                content: `
-You have reached the tool-use limit.
-
-Using the repository evidence already collected above,
-provide the best possible answer to the original question.
-
-Do not call any tools.
-Do not invent information.
-Clearly mention the relevant file paths.
-`
+                content:
+                    "Using only the repository evidence above, answer the original question concisely. Do not use tools."
             }
         ],
         tool_choice: "none"

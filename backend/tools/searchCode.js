@@ -10,15 +10,28 @@ async function searchCode(query, repoName) {
         throw new Error("Repository name is required");
     }
 
-    const queryEmbedding = await embedText(
-        query,
-        "search_query"
-    );
+    const enhancedQuery = `
+Find relevant source code for this request.
+
+Search specifically for:
+- application entry point
+- startup and initialization
+- mounting or rendering
+- main index files
+- ReactDOM.render
+- createRoot
+- application bootstrapping
+
+Original query:
+${query}
+`;
+
+    const queryEmbedding = await embedText(enhancedQuery);
 
     const results = await searchChunks(
         queryEmbedding,
         repoName,
-        3
+        5
     );
 
     return results.map((result) => ({

@@ -35,6 +35,14 @@ router.post('/ask', async (req, res) => {
           `\n--- ${r.file_path} ---\n${r.chunk_text}\n`
       )
       .join('\n');
+      console.log("\n===== RAG RESULTS =====");
+
+results.forEach((r, i) => {
+    console.log(`\n--- RESULT ${i + 1}: ${r.file_path} ---`);
+    console.log(r.chunk_text);
+});
+
+console.log("\n===== END RAG RESULTS =====\n");
 
     const completion = await groq.chat.completions.create({
       model: 'openai/gpt-oss-120b',

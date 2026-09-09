@@ -1,17 +1,35 @@
-const { CohereClient } = require("cohere-ai");
+const { pipeline } = require("@huggingface/transformers");
 
-const cohere = new CohereClient({
-    token: process.env.COHERE_API_KEY
-});
+let extractor = null;
 
-async function embedText(text, inputType = "search_document") {
-    const response = await cohere.embed({
-        texts: [text],
-        model: "embed-english-v3.0",
-        inputType: inputType
+async function getExtractor() {
+    if (!extractor) {
+        console.log("Loading embedding model...");
+
+        extractor = await pipeline(
+            "feature-extraction",
+            "Xenova/all-MiniLM-L6-v2"
+        );
+
+        console.log("Embedding model ready.");
+    }
+
+    return extractor;
+}
+
+async function embedText(text) {
+    if (!text || !text.trim()) {
+        throw new Error("Text is required for embedding");
+    }
+
+    const model = await getExtractor();
+
+    const output = await model(text, {
+        pooling: "mean",
+        normalize: true
     });
 
-    return response.embeddings[0];
+    return Array.from(output.data);
 }
 
 module.exports = {

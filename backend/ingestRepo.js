@@ -39,10 +39,8 @@ async function ingestRepo(repoName) {
                 `  Embedding chunk ${i + 1}/${chunks.length}...`
             );
 
-            const embedding = await embedText(
-                chunks[i],
-                "search_document"
-            );
+            // Generate a 384-dimensional local embedding
+            const embedding = await embedText(chunks[i]);
 
             await storeChunk(
                 repoName,

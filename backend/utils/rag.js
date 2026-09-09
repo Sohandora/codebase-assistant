@@ -10,10 +10,18 @@ async function retrieveContext(question, repoName) {
         throw new Error("Repository name is required");
     }
 
-    const queryEmbedding = await embedText(
-        question,
-        "search_query"
-    );
+    const enhancedQuestion = `
+Find the source code file responsible for the main application entry point,
+startup, initialization, mounting or rendering of the application.
+
+Question: ${question}
+
+Relevant code concepts:
+main entry point, index.js, index.tsx, index.jsx,
+ReactDOM.render, createRoot, render, application startup
+`;
+
+    const queryEmbedding = await embedText(enhancedQuestion);
 
     return await searchChunks(
         queryEmbedding,
